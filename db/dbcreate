@@ -1,0 +1,25 @@
+#! /usr/bin/bash
+
+name=$1
+
+validator -d $name
+if  [[ $? == 0 ]] ; then
+
+        #create database directory
+        mkdir $DATA_PATH/$name > /dev/null 2>&1
+
+        if test $? -eq 0 
+        then
+                echo "$name created successfully" 
+                exit 0
+
+        else
+                echo "ERROR: Already Exists " >&2
+                exit 1
+        fi
+
+else
+        echo "ERROR:Invalid table name" >&2
+        exit 2
+
+fi

@@ -1,0 +1,6 @@
+desha
+auto_increment:0
+columns=4
+id:string:notnull::id:#1
+name:string:null:::#2
+addr:string:null:::#3

@@ -1,0 +1,86 @@
+#! /usr/bin/bash
+
+db_name_regex='^[^0-9\\/?%*:|\"<>. ][a-zA-Z0-9_]{1,64}$'
+int_regex='^[0-9]*$'
+string_regex='[0-9a-zA-Z~!@#$%^&*)(\ _+|":>?<\\]*$'
+
+if [[ $# > 1 ]]
+then
+
+        case $1 in 
+
+                -d) 
+                        if [[ $2 =~ $db_name_regex ]]
+                        then
+                                exit 0
+                        else
+                                exit 1
+                        fi
+                        ;;
+
+                --int)
+                        int_value=$2
+                        nullable_value=$3
+                        pk_value=$4
+
+                                if [[ $int_value =~ $int_regex ]]
+                                then
+                                        if [[ $nullable_value == "auto" && $pk_value == "pk" ]]
+                                        then
+                                                exit 11
+                                        fi
+
+                                        if [[ $nullable_value == "notnull" && $pk_value == "pk" ]]
+                                        then
+                                                exit 12
+                                        fi
+
+                                        if [[ $nullable_value == "notnull"  &&  -z $int_value ]]
+                                        then
+                                                exit 13
+                                        fi
+
+
+                                        exit 0
+                                else
+                                        exit 1
+                                fi
+                        ;;
+
+                --string)
+
+                        string_value=$2
+                        nullable_value=$3
+                        pk_value=$4
+
+                                if [[ $string_value =~ $string_regex ]]
+                                then
+
+                                        if [[ $nullable_value == "notnull" && $pk_value == "pk" ]]
+                                        then
+                                                exit 12
+                                        fi
+                                        
+                                        if [[ $nullable_value == "notnull" && -z $string_value ]]
+                                        then
+                                                exit 13
+                                        fi
+
+                                        exit 0
+                                else
+
+                                        exit 1
+                                fi
+
+                        ;;
+
+
+                *) 
+                        echo "invalid option" >&2
+                        exit 1 ;;
+        esac
+
+fi
+
+
+

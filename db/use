@@ -1,0 +1,25 @@
+#! /bin/bash
+
+#RETURNS the name of current database
+
+if [[ $# == 1 ]]
+then
+        db_path=$DATA_PATH/$1
+
+        if [[ -d $db_path ]]
+        then
+                echo "$1" 
+                exit 0
+
+        else
+                echo "ERROR:couldn't find db:$1" >&2
+                exit 1
+
+        fi
+
+else
+        echo "ERROR:wrong params" >&2
+        exit 2
+
+fi
+

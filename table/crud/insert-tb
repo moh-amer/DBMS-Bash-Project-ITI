@@ -1,0 +1,105 @@
+#! /usr/bin/bash
+
+ # insert table-name "id:1" "name:Mohamed" "age:25"
+ # getschema to get (colsnames- number of rows - )
+
+ DB_FILES_PATH=$DATA_PATH/$IN_USE_DB
+if [[ $# < 2 ]]
+then 
+        echo "wrong params" >&2
+        exit 1
+fi
+
+table_name=$1
+col_num=$(getschema -n $table_name)
+records_num=$(getschema -r $table_name)
+col_names=$(getschema --col-names $table_name)
+columns=$(getschema --columns $table_name)
+autoIncrementRow=$(getschema --auto-increment $table_name)
+input_arr=(${@:2})
+
+ROW=''
+
+#append auto increment row in case it not provided
+if [[ ! -z $autoIncrementRow ]]
+then
+        auto_val="$(echo $autoIncrementRow | cut -d: -f1)":0
+        input_arr=($auto_val ${input_arr[@]})
+
+fi
+
+for col in ${input_arr[@]}
+do
+        field_name=$(cut -d: -f1 <<< $col)
+        field_value=$(cut -d: -f2 <<< $col)
+
+        if [[ $(grep -w $field_name <<< $col_names) ]]
+        then
+                column_data=$(getschema --col-data $table_name $field_name)
+                col_index=$(cut -d# -f2 <<< $column_data)
+                datatype=$(cut -d: -f2 <<< $column_data)
+                nullable=$(cut -d: -f3 <<< $column_data)
+                pk=$(cut -d: -f4 <<< $column_data)
+                default=$(cut -d: -f5 <<< $column_data)
+
+                validator --"$datatype" "$field_value" "$nullable" "$pk"
+                validator_value=$?
+
+                if [[ $validator_value == 0 ]]
+                then
+
+                        if [[ ! -z $field_value ]]
+                        then
+                                ROW=$ROW:$field_value
+                        else
+                                ROW=$ROW:$default
+                        fi
+
+                elif [[ $validator_value == 11 ]]
+                then
+                        #handle auto generated primary key
+                        auto_inc=$(( $records_num+1 ))
+                        sed -i "s/auto_increment:$records_num/auto_increment:$auto_inc/" $DB_FILES_PATH/$table_name.schema
+                        ROW=$ROW:$auto_inc
+
+
+                elif [[ $validator_value == 12 ]]
+                then 
+                        #handle user pk columns
+                      
+                        #check for duplication
+                        occur=$(cut -d: -f$col_index  $DB_FILES_PATH/$table_name.sql | grep -cw "$field_value" )
+                        if [[ $occur -gt 0 ]]
+                        then
+                                echo "ERROR:primary key duplication" >&2
+                                exit 15
+                        else
+                                
+                                ROW=$ROW:$field_value
+                        fi
+
+                elif [[ $validator_value == 13 ]]
+                then
+                        #handle not null columns but sent empty
+                        if [[ -z $default && $datatype == "int" ]]
+                        then
+                                default=0
+                        fi
+
+                        ROW=$ROW:$default
+
+                else
+                        echo "ERROR:invalid data type for $field_value<$datatype>" >&2
+                        exit 1
+                fi
+
+        fi
+done
+                #insert into table after deleting first (:)
+                #something wrong in insertion
+                sed 's/^.//' <<< $ROW >> $DB_FILES_PATH/$table_name.sql
+                if [[ $? == 0 ]]
+                then
+                        echo "Inserted Successfully"
+                fi
+

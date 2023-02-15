@@ -1,0 +1,157 @@
+#! /usr/bin/bash
+
+
+#when table_name "name:=:Mohamed" "age:>:25" 
+
+table_name=$1
+columns_values=()
+
+#make sure that all columns exists and every thing is ok
+for arg in ${@:2}
+do
+        col_name=$(cut -d: -f1 <<< $arg)
+        operator=$(cut -d: -f2 <<< $arg)
+        col_value=$(cut -d: -f3 <<< $arg)
+
+        #id:int:notnull:pk::#1 >> coldata
+        col_data=$(getschema --col-data $table_name $col_name )
+
+        if [[ ! -z $col_data ]] #check if column exists in table
+        then
+                #store all table data into an array after validation
+                columns_data_arr=(${columns_data_arr[@]} $operator@$col_value@$col_data)
+                
+        else
+                echo "ERROR:<$col_name> is not a column"
+
+                exit 101
+
+        fi
+done
+
+#loop to get  index : value of column
+for data in "${columns_data_arr[@]}"
+do
+        value=$(cut -d '@' -f1 <<< $data)
+        index=$(cut -d '#' -f2 <<< $data)
+done
+
+case ${#columns_data_arr[@]} in
+        
+        0)
+                awk -F: '{print}' $DATA_PATH/$IN_USE_DB/$table_name.sql
+                ;;
+
+        1)
+                 cond1=${columns_data_arr[0]}
+                 op1=$(cut -d '@' -f1 <<< $cond1)
+                 value1=$(cut -d '@' -f2 <<< $cond1)
+                 index1=$(cut -d '#' -f2 <<< $cond1)
+
+                 awk -F: -v op1=$op1 -v index1=$index1 -v value1=$value1\
+                 '{
+                if(op1==">"){
+
+                        if ($index1 > value1)
+                                print $0 
+
+                 }else if(op1 == "<"){
+
+                        if ($index1 < value1)
+                                print $0 
+                        
+                } else if (op1 == "="){
+
+                        if ($index1 == value1)
+                                print $0 
+
+                }
+
+                }' $DATA_PATH/$IN_USE_DB/$table_name.sql
+                ;;
+        2) 
+
+                 cond1=${columns_data_arr[0]}
+                 op1=$(cut -d '@' -f1 <<< $cond1)
+                 value1=$(cut -d '@' -f2 <<< $cond1)
+                 index1=$(cut -d '#' -f2 <<< $cond1)
+                 
+                 cond2=${columns_data_arr[1]}
+                 op2=$(cut -d '@' -f1 <<< $cond2)
+                 value2=$(cut -d '@' -f2 <<< $cond2)
+                 index2=$(cut -d '#' -f2 <<< $cond2)
+
+                 awk -F: -v op1=$op1 -v index1=$index1 -v value1=$value1 -v op2=$op2 -v index2=$index2 -v value2=$value2\
+                 '{
+                if(op1==">"){
+
+                        if(op2==">"){
+
+                                if ($index1 > value1 && $index2 > value2 )
+                                        print $0
+
+
+                         }else if(op2 == "<"){
+
+                                if ($index1 > value1 && $index2 < value2 )
+                                        print $0 
+                                
+                        } else if (op2 == "="){
+
+                                if ($index1 > value1 && $index2 == value2 )
+                                        print $0
+
+                        }
+
+                 }else if(op1 == "<"){
+
+
+                        if(op2==">"){
+
+                                if ($index1 < value1 && $index2 > value2 )
+                                        print $0
+
+                         }else if(op2 == "<"){
+
+                                if ($index1 < value1 && $index2 < value2 )
+                                        print $0
+                                
+                        } else if (op2 == "="){
+
+                                if ($index1 < value1 && $index2 == value2 )
+                                        print $0
+
+                        }
+                        
+                } else if (op1 == "="){
+
+
+                        if(op2 == ">"){
+
+                                if ($index1 == value1 && $index2 > value2 )
+                                        print $0
+
+                         }else if(op2 == "<"){
+
+                                if ($index1 == value1 && $index2 < value2 )
+                                        print $0
+                                
+                        } else if (op2 == "="){
+
+                                if ($index1 == value1 && $index2 == value2 )
+                                        print $0
+
+                        }
+
+                }
+
+                } ' $DATA_PATH/$IN_USE_DB/$table_name.sql
+                ;;
+        *) 
+
+                echo "ERROR: too many conditions"
+                exit 101
+                ;;
+esac
+
+

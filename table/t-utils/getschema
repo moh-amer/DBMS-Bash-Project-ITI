@@ -1,0 +1,42 @@
+#! /bin/bash
+
+
+if [[ $# > 1 ]]
+then
+
+        schema=$DATA_PATH/$IN_USE_DB/$2.schema
+                case $1 in
+                        -a) cat $schema
+                                exit 0
+                                ;;
+                        -r) sed -n '2p' $schema | cut -d: -f2 #db records number
+                                exit 0
+                                ;;
+                        -n) sed -n '3p' $schema | cut -d: -f2 #db columns number
+                                exit 0
+                                ;;
+                        --columns) awk '{if (NR > 3) print}' $schema
+                                exit 0
+                                ;;
+                        --col-names) awk -F: '{ORS=" "; if (NR > 3) print $1 }' $schema # ORS changes separator to be space instead of newline
+                                exit 0
+                                ;;
+
+                        --col-data) grep -w $3 $schema 
+                                exit 0
+                                ;;
+                        --primary-key) grep pk $schema
+                                exit 0
+                                ;;
+
+                        --auto-increment) grep :auto: $schema
+                                exit 0
+                                ;;
+
+                        *) cat $schema
+                                echo "ERROR:missing options"
+                                exit 2
+                                ;;
+                esac
+
+fi

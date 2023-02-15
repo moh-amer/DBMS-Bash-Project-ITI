@@ -1,0 +1,6 @@
+students
+auto_increment:0
+columns=4
+id:int:notnull:pk::#1
+name:string:notnull::Name:#2
+age:int:notnull::20:#3

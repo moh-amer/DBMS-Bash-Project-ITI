@@ -1,0 +1,15 @@
+#!/bin/bash
+
+dir_path=$DATA_PATH/$IN_USE_DB
+file_names=()
+
+for file in "$dir_path"/*.sql; do
+  if [ -f "$file" ]; then
+    file_name="${file##*/}"
+    file="${file_name%.*}"
+    file_names=(${file_names[@]} $file)
+  fi
+done
+
+echo ${file_names[@]} 
+exit 0

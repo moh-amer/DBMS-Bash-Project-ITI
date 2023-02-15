@@ -1,0 +1,34 @@
+#! /usr/bin/bash
+
+if [[ $# < 2  ]]
+then
+        echo "ERROR:Missing Parameters" >&2
+        exit 3
+
+fi
+
+if [ -d $1 ]
+then
+        if test $(validator -d $2)
+        then
+
+                mv $1 $2 > /dev/null 2>&1
+                if [ $? -eq 0 ]
+                then
+                        echo "Renamed"
+                        exit 0
+                else
+                        echo "ERROR:Can't Rename Database" >&2
+                        exit 1
+                fi
+
+        else
+                echo "ERROR:Invalid Database name" >&2
+                exit 4
+        fi
+
+else
+        echo "ERROR:Database doesn't exist" >&2
+        exit 2
+
+fi

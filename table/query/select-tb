@@ -1,0 +1,145 @@
+#! /usr/bin/bash
+
+#function to echo devider for the table
+function echo_devider {
+
+        let cols
+        cols=$(( $1*16 ))
+        printf "+"
+        for (( i=0 ; i < $cols ; i++))
+        do
+                printf '-'
+        done
+
+        printf "+\n"
+}
+
+#select table_name all|[name|age] [condition=[age:=:25|name:=:Mohamed]]
+arg_len=$#
+
+OLDIFS=$IFS
+
+if [[ $arg_len < 2 ]]
+then
+        exit 1
+fi
+
+table_name=$1
+
+IFS='|'
+conditions=($3)
+IFS=$OLDIFS
+
+        IFS='|'
+        projections=($2)
+        IFS=$OLDIFS
+
+
+        #match indices data
+        formattedIndices=''
+        table_header=()
+
+        for col in ${projections[@]}
+        do
+                if [[ ! -z $col ]]
+                then
+                        fIndex=$(grep $col <<< $(getschema --columns $table_name) | cut -d'#' -f2)
+                        col_name=$(grep $col <<< $(getschema --columns $table_name) | cut -d':' -f1)
+
+                        formattedIndices=(${formattedIndices[@]} $fIndex)
+                        #table_header=( ${table_header[@]} $col_name )
+                fi
+
+                done
+
+                
+                #getschema column names 
+                colNames=($(getschema --col-names $table_name))
+
+                sortedColsNames=''
+
+                sortedColNums=( $( printf "%s\n" "${formattedIndices[@]}" | sort -n ) )
+               
+                for no in ${sortedColNums[@]}
+                do
+                        no=$(( $no-1 ))
+                        sortedColsNames=( ${sortedColsNames[@]} ${colNames[$no]})
+                done
+
+                table_header=( ${sortedColsNames[@]} )
+
+        #extract indices
+   formattedIndices=$(sed 's/ /,/' <<< ${formattedIndices[@]})
+    
+   #     printf "%-10s \n" "foobar"
+   col_no=${#table_header[@]}
+
+   if [[ $col_no == 0 ]]
+   then
+           table_header=($(getschema --col-names $table_name))
+   fi
+
+
+   col_no=${#table_header[@]}
+
+   echo_devider $col_no
+   spaces=$(($col_no*10))
+    printf "                    %-"$spaces"s\n" "$table_name"
+   echo_devider $col_no
+
+        for element in ${table_header[@]}
+        do
+             printf "   %10s" "$element" 
+        done
+        printf "%10s" 
+        echo 
+   echo_devider $col_no
+
+
+        if [[ -z $formattedIndices ]]
+        then
+
+                # print columns in case of No projection
+                while read row
+                do
+                        rowarr=$(echo $row | sed -e "s/:/ /g")
+
+                        printf "|"
+                        for element in ${rowarr[@]}
+                        do
+                             printf "   %10s" "$element" 
+                        done
+
+                        printf "%10s" "|"
+                        echo
+
+
+                        #cut formattedIndices like 1,2,3,4,5
+                done <<< $( when "$table_name" "${conditions[@]}" ) 
+
+        else
+
+                # print the columns in case of Projection
+
+                while read row
+                do
+                        rowarr=$(echo $row | sed -e "s/:/ /g")
+
+                        printf "|"
+                        for element in ${rowarr[@]}
+                        do
+                             printf "   %10s" "$element" 
+                        done
+
+                        printf "%10s" "|"
+                        echo
+
+
+                        #cut formattedIndices like 1,2,3,4,5
+                done <<< $( when "$table_name" "${conditions[@]}" | cut -d: -f"$formattedIndices" 2> /dev/null ) 
+
+
+        fi
+echo_devider $col_no
+
+

@@ -1,0 +1,29 @@
+#!/bin/bash
+
+dir_path=$DATA_PATH
+dir_names=()
+
+for file in "$dir_path"/*
+do
+  if [ -d "$file" ]; then
+    dir_name="${file##*/}"
+    dir_names+=( "$dir_name" )
+  fi
+done
+
+if [[ ${#dir_names[@]} == 0 ]]; then
+        echo "No Databses to show"
+        exit 1
+    fi
+            echo "+----------------------+"
+            echo "|                      |"
+            echo "|    DATABASES LIST    |"
+            echo "|                      |"
+            echo "+----------------------+"
+
+    for database in ${dir_names[@]}
+        do
+            printf "%10s\n" "$database"         
+        done
+
+            echo "+---------------------+"

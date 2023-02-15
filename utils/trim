@@ -1,0 +1,16 @@
+#! /usr/bin/bash
+
+if [[ $# == 1 ]]
+then
+        input=$1
+        #trim leading space
+        input=$(echo $input | sed 's/^ *//g' | sed 's/ *$//g' )
+        echo $input
+        
+        exit 0
+
+else
+        echo "ERROR: missing parameters" >&2
+        
+        exit 1
+fi

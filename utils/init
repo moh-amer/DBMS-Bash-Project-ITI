@@ -1,0 +1,25 @@
+#! usr/bin/bash 
+
+#script used to make me call all subscripts in program just as commands using their names 
+
+for dirname in $(ls $PWD)
+do
+        dirpath=$PWD/$dirname
+        if test -d $dirpath 
+        then
+                for subdir in $(ls $dirpath)
+                do
+                        subdirpath=$dirpath/$subdir
+                        if test -d $subdirpath
+                        then
+                                PATH=$subdirpath:$PATH
+                        else
+                                sudo chmod u+x $subdirpath
+                        fi
+                done
+
+                PATH=$dirpath:$PATH
+        else
+                sudo chmod u+x $dirpath
+        fi
+done

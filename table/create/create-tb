@@ -1,0 +1,82 @@
+#!/bin/bash
+
+#create-tb table_name "id:string:auto:pk" "name:string:notnull:"
+myArray=( "$@" )
+row=''
+flag=0
+
+if [[ $# < 2 ]]; then
+        echo "ERROR:Missing Arguments"
+        exit 1
+fi
+
+table_name=$1
+table_path=$DATA_PATH/$IN_USE_DB
+
+if [[ -f "$table_path/$table_name.sql" ]]; then
+        echo "Table Exists"
+        exit 2
+fi
+
+validator -d $table_name
+if [[ $? != 0 ]]
+then
+        echo "Invalid name"
+        exit
+fi
+
+
+for (( i=1; i< $#; i++))
+do
+	#checks if user enters more than one pk
+        if [[ (  $( cut -d: -f 4 <<< "${myArray[i]}") == "pk"  &&  $( cut -d: -f 2 <<< "${myArray[i]}") == "int"  ) &&   $( cut -d: -f 3 <<< "${myArray[i]}") == "auto" ]]; then
+                if [[ flag -eq 0 ]]; then
+                         flag=1
+                 else
+                         echo "ERROR:Can't Enter More Than One PK" 2>&2
+                         exit 4
+                fi
+       fi
+
+
+	#check if string is auto	
+	if [[ $(cut -d: -f 2 <<< "${myArray[i]}") == "string" &&  $( cut -d: -f 3 <<< "${myArray[i]}") == "auto" ]]; then
+		echo "ERROR:String Can't Be Auto_Increment" 2>&2
+		exit 5
+	fi
+
+        #user entering a primary key with a default value
+        if [[ $( cut -d: -f 4 <<< "${myArray[i]}") == "pk" &&  $( cut -d: -f 5 <<< "${myArray[i]}" ) != ""  ]]; then
+              echo "ERROR:PK Can't has Default Value" 2>&2
+                exit 2
+        fi
+
+	#checking for duplicate column names
+        row=$row" "$( cut -d: -f 1 <<< ${myArray[i]} )
+        current=$( cut -d: -f 1 <<< ${myArray[i]})
+        count=$(grep -o -i $current <<< $row | wc -w )
+
+        if [[ $count > 1 ]]; then
+                echo "ERROR:Multiple Columns With The Same Name" 2>&2
+		exit 3
+        fi
+	
+done
+        touch "$table_path/$table_name.sql" "$table_path/$table_name.schema"
+
+        if [[ $flag -eq 0  ]]; then
+                echo -e "$table_name\nauto_increment:0\ncolumns=$#" > "$table_path/$table_name.schema"
+                #To be tested
+                echo "_id:int:auto:pk:" >> "$table_path/$table_name.schema"
+        else
+                echo -e "$table_name\nauto_increment:0\ncolumns:$(($#-1))" > "$table_path/$table_name.schema"
+
+        fi
+
+for ((i=1; i< $#; i++ ))
+do
+	echo ${myArray[$i]}:#$i >> "$table_path/$table_name.schema"
+done
+
+echo "Table Created Successfully"
+exit 0

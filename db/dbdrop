@@ -1,0 +1,27 @@
+#! /usr/bin/bash
+
+if [[ $# < 1  ]]
+then
+        echo "ERROR:Missing Parameters" >&2
+        exit 3
+fi
+
+database=$DATA_PATH/$1
+
+if [ -d $database ]
+then
+        rm -r $database > /dev/null 2>&1
+        if [ $? -eq 0 ]
+        then
+                echo "Removed"
+                exit 0
+        else
+                echo "ERROR:Can't delete Database" >&2
+                exit 1
+        fi
+
+else
+        echo "ERROR:Database doesn't exist" >&2
+        exit 2
+
+fi

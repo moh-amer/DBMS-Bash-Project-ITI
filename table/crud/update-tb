@@ -1,0 +1,86 @@
+#! /usr/bin/bash
+
+#updat3   #update-tb table_name "name:Mohamed|age:25" "name:=:Ali|age:>:25"
+
+table_name=$1
+
+IFS='|'
+update_cols=( $2 )
+conditions=($3)
+unset IFS
+
+for (( i=0 ; i < ${#update_cols[@]}; i++ ))
+do
+        counter=0
+while read row 
+do
+
+        old_row=$row
+        new_row=''
+
+        counter=$(($counter+1))
+
+       for col in ${update_cols[@]}
+       do
+
+               field_name=$(echo $col | cut -d: -f1 )
+               field_value=$(echo $col | cut -d: -f2 )
+
+
+               col_data=$(getschema --col-data $table_name $field_name )
+               col_index=$(echo $col_data | cut -d# -f2)
+               
+               #get datatype to validate
+               col_datatype=$(echo $col_data | cut -d: -f2)
+               col_nullable=$(echo $col_data | cut -d: -f3)
+               col_pk=$(echo $col_data | cut -d: -f4)
+               col_default=$(echo $col_data | cut -d: -f5)
+
+               #check here for the value before insertion check for datatype and constraints
+               validator --"$col_datatype" "$field_value" "$col_nullable" "$col_pk" 
+               validator_value=$?
+
+               if [[ $validator_value == 0 ]]
+               then
+                        #perform update process
+                        awk -v new_value="$field_value" -v row=$row -v col_index=$col_index -i inplace -F':'\
+                        '{OFS=FS}{if(row==$0){$col_index=new_value } print}' $DATA_PATH/$IN_USE_DB/$table_name.sql 
+
+
+                elif [[ $validator_value == 12 ]]
+                then
+                        occur=$(cut -d: -f$col_index $DATA_PATH/$IN_USE_DB/$table_name.sql | grep -cw "$field_value")
+
+                        if [[ $occur > 0 ]]
+                        then
+                                echo "ERROR:duplication , can't insert existing value" 2>&2
+                                exit 101
+                        fi
+
+                        #perform update process
+                        awk -v new_value="$field_value" -v row=$row -v col_index=$col_index -i inplace -F':'\
+                        '{OFS=FS}{if(row==$0){$col_index=new_value } print}' $DATA_PATH/$IN_USE_DB/$table_name.sql 
+
+                elif [[ $validator_value == 11 ]]
+                then
+                        echo "ERROR:can't update auto increment field" 2>&2
+                        exit 102
+
+                elif [[ $validator_value == 13 ]]
+                then
+                        echo "ERROR: not null field" 2>&2
+                        exit 103
+
+                else
+                        echo "ERROR: invalid datatype for <$field_name>"
+                        exit 1
+               fi
+       done
+
+done <<< $(when $table_name "${conditions[@]}" )
+done
+
+
+echo "$counter Rows Updated Successfully"
+exit 0
+

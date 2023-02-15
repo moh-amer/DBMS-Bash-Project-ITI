@@ -1,0 +1,141 @@
+#!/bin/bash
+
+clear
+source utils/init 
+source div/menu.sh
+source utils/printC.sh
+
+export DATA_PATH=data
+export IN_USE_DB=$(use $1 2> /dev/null )
+
+
+
+show_main_menu
+while read -p "Enter your choice: " selection
+do
+case $selection in  
+1)  
+    while read -p "PLease enter Database name: " DB_name
+    do
+#    validator -d $DB_name
+      dbcreate $DB_name
+     if [[ $? == 0 ]]; then
+         break
+     fi
+    done
+
+    read -p "Press Enter To Return To Main Menu<Enter>  "
+    clear
+    show_main_menu
+
+    ;;
+    
+2)  
+     showdbs
+     read -p "Press Enter To Return <Enter> :" pressedKey
+     clear
+     show_main_menu
+        ;;
+
+3)       
+    . div/use-db-script.sh
+    use_database
+    
+    #choices for databse table actions
+    show_table_actions
+    while read -p "Enter Your Table Choice: " selection
+    do
+
+            #Start case
+            case $selection in 
+                    1)
+                            #DONE
+                            . div/create-tb-script.sh
+                            read -p "Press Enter To Return <Enter>"
+                            clear
+                            show_table_actions
+
+                            ;;
+
+                    2)      
+
+                            #DONE
+                            . div/choose-table.sh
+                            . div/insert-tb-script.sh
+
+                            read -p "Press Enter To Return <Enter>"
+                            clear
+                            show_table_actions
+
+                            ;;
+
+                    3)  
+                            #DONE
+                            . div/choose-table.sh
+                            . div/update-or-delete-script.sh
+                            update_or_delete update
+                            read -p "Press Enter To Return To Table Menu <Enter> " pressedKey
+                            clear
+                            show_table_actions
+                            #update
+                            ;;
+
+                    4)
+                            #DONE
+                            . div/choose-table.sh
+                            . div/update-or-delete-script.sh
+                            update_or_delete delete
+                            read -p "Press Enter To Return To Table Menu <Enter> " pressedKey
+                            clear
+                            show_table_actions
+                            #delete
+                            echo
+                            ;;
+
+                    5)  
+                            . div/choose-table.sh
+                            . div/select-tb-script.sh
+                            read -p "Press Enter to return to Table Menu <Enter> " pressedKey
+                            clear
+                            show_table_actions
+                            #select 
+                            #needs table name
+
+                            echo
+                            ;;
+                    6) 
+                            #DONE
+                            . div/choose-table.sh
+                            drop-tb $table_name
+                            read -p "Press Enter To Return <Enter> " pressedKey
+                            clear
+                            show_table_actions
+                    ;;
+
+                    7)
+                            clear
+                            show_main_menu
+                            break ;;
+           esac #End case
+
+            #end choices for database table actions
+    done
+
+        ;;#End choice three
+
+4) 
+    #check exit code
+        showdbs
+        read -p "To Drop Enter DB Name:  " DB_drop
+        dbdrop $DB_drop
+        read -p "Press Enter To Return To Main Menu" pressedKey
+        clear
+        show_main_menu
+    ;;
+5) 
+        echo "Good Bye ^_^"
+        exit ;;
+esac
+
+done
+
